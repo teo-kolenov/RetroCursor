@@ -6,9 +6,9 @@ A Figma plugin that allows users to insert cursor images on canvas with customiz
 
 - Insert cursor images onto the Figma canvas
 - Choose from 3 cursor types:
-  - MacOS 9 - pointer
-  - MacOS 9 - hand  
-  - MacOS 9 - busy
+  - MacOS 9
+  - Windows 98
+  - Amiga Workbench
 - Select from 5 size options:
   - 16 px
   - 24 px (default)
