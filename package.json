@@ -5,6 +5,7 @@
   "main": "code.js",
   "scripts": {
     "build": "tsc",
+    "test": "node --test",
     "watch": "tsc -w",
     "dev": "tsc -w"
   },

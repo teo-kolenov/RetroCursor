@@ -5,17 +5,14 @@ A Figma plugin that allows users to insert cursor images on canvas with customiz
 ## Features
 
 - Insert cursor images onto the Figma canvas
-- Choose from 3 cursor types:
-  - MacOS 9 - pointer
-  - MacOS 9 - hand  
-  - MacOS 9 - busy
-- Select from 5 size options:
-  - 16 px
-  - 24 px (default)
+- Choose cursor images from a compact 4-column icon grid
+- Select from 6 size options:
+  - 24 px
   - 32 px
   - 48 px
-  - 64 px
-- Update existing cursor images when selected
+  - 64 px (default)
+  - 128 px
+  - 256 px
 - Clean, minimal UI that appears when plugin is run
 
 ## Installation
@@ -29,11 +26,10 @@ A Figma plugin that allows users to insert cursor images on canvas with customiz
 ## Usage
 
 1. Run the "Cursor Widget" plugin from the plugins menu
-2. Select cursor type from the dropdown
-3. Select size from the dropdown  
-4. Click to add the cursor to your canvas
-5. The cursor will be placed at the center of your viewport
-6. To modify an existing cursor, select it and the plugin UI will show current settings
+2. Select the cursor size
+3. Click a cursor image in the grid to add it to your canvas
+4. The cursor will be placed at the center of your viewport
+5. To add a different cursor, click another image in the grid
 
 ## Development
 
@@ -62,10 +58,9 @@ npm run watch
 
 ## Technical Details
 
-- Uses SVG cursor images embedded as base64 data
+- Uses cursor images embedded as base64 data
 - Creates rectangle nodes with image fills
 - Handles selection changes to update UI
-- Supports real-time parameter updates
 
 ## Release Process
 

@@ -84,6 +84,15 @@ type CursorAsset = {
 };
 
 const imageCache = new Map<string, CursorAsset>();
+const defaultCursorType = "MacOS 9 - pointer";
+const defaultCursorSize = "64 px";
+const gridCellSize = 64;
+const gridColumnCount = 4;
+const maxVisibleGridRows = 8;
+const gridScrollbarWidth = 14;
+const uiPaddingWidth = 16;
+const uiWidthBuffer = 2;
+const uiChromeHeight = 52;
 
 function getPngDimensions(bytes: Uint8Array): { width: number; height: number } {
   if (bytes.length < 24) {
@@ -161,11 +170,33 @@ function createCursorImage(cursorType: string, cursorSize: string): RectangleNod
   return node;
 }
 
+function postCursorOptions(): void {
+  figma.ui.postMessage({
+    type: 'cursor-options',
+    cursors: Object.entries(cursorSVGs).map(([cursorType, base64]) => ({
+      cursorType,
+      label: cursorType,
+      src: `data:image/png;base64,${base64}`
+    }))
+  });
+}
+
+const visibleGridRows = Math.max(
+  1,
+  Math.min(Math.ceil(Object.keys(cursorSVGs).length / gridColumnCount), maxVisibleGridRows)
+);
+const uiWidth = (gridColumnCount * gridCellSize) + gridScrollbarWidth + uiPaddingWidth + uiWidthBuffer;
+const uiHeight = (visibleGridRows * gridCellSize) + uiChromeHeight;
+
 // Show the UI
-figma.showUI(__html__, { width: 240, height: 192 });
+figma.showUI(__html__, { width: uiWidth, height: uiHeight });
 
 // Handle messages from UI
 figma.ui.onmessage = (msg: any) => {
+  if (msg.type === 'ui-ready') {
+    postCursorOptions();
+  }
+
   if (msg.type === 'create-cursor') {
     const { cursorType, cursorSize } = msg;
     
@@ -205,8 +236,8 @@ figma.on('selectionchange', () => {
     
     // Try to extract cursor info from node name
     const name = node.name;
-    let cursorType = "MacOS 9 - pointer";
-    let cursorSize = "24 px";
+    let cursorType = defaultCursorType;
+    let cursorSize = defaultCursorSize;
     
     Object.keys(cursorSVGs).forEach(type => {
       if (name.includes(type)) {

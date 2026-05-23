@@ -54,6 +54,15 @@ function decodeBase64ToBytes(base64) {
     return Uint8Array.from(output);
 }
 const imageCache = new Map();
+const defaultCursorType = "MacOS 9 - pointer";
+const defaultCursorSize = "64 px";
+const gridCellSize = 64;
+const gridColumnCount = 4;
+const maxVisibleGridRows = 8;
+const gridScrollbarWidth = 14;
+const uiPaddingWidth = 16;
+const uiWidthBuffer = 2;
+const uiChromeHeight = 52;
 function getPngDimensions(bytes) {
     if (bytes.length < 24) {
         throw new Error('Cursor asset is too small to be a valid PNG.');
@@ -117,10 +126,26 @@ function createCursorImage(cursorType, cursorSize) {
     applyCursorFill(node, cursorType, cursorSize);
     return node;
 }
+function postCursorOptions() {
+    figma.ui.postMessage({
+        type: 'cursor-options',
+        cursors: Object.entries(cursorSVGs).map(([cursorType, base64]) => ({
+            cursorType,
+            label: cursorType,
+            src: `data:image/png;base64,${base64}`
+        }))
+    });
+}
+const visibleGridRows = Math.max(1, Math.min(Math.ceil(Object.keys(cursorSVGs).length / gridColumnCount), maxVisibleGridRows));
+const uiWidth = (gridColumnCount * gridCellSize) + gridScrollbarWidth + uiPaddingWidth + uiWidthBuffer;
+const uiHeight = (visibleGridRows * gridCellSize) + uiChromeHeight;
 // Show the UI
-figma.showUI(__html__, { width: 240, height: 192 });
+figma.showUI(__html__, { width: uiWidth, height: uiHeight });
 // Handle messages from UI
 figma.ui.onmessage = (msg) => {
+    if (msg.type === 'ui-ready') {
+        postCursorOptions();
+    }
     if (msg.type === 'create-cursor') {
         const { cursorType, cursorSize } = msg;
         const cursorNode = createCursorImage(cursorType, cursorSize);
@@ -150,8 +175,8 @@ figma.on('selectionchange', () => {
         const node = selection[0];
         // Try to extract cursor info from node name
         const name = node.name;
-        let cursorType = "MacOS 9 - pointer";
-        let cursorSize = "24 px";
+        let cursorType = defaultCursorType;
+        let cursorSize = defaultCursorSize;
         Object.keys(cursorSVGs).forEach(type => {
             if (name.includes(type)) {
                 cursorType = type;
