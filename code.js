@@ -59,7 +59,6 @@ const defaultCursorSize = "64 px";
 const gridCellSize = 64;
 const gridColumnCount = 4;
 const maxVisibleGridRows = 8;
-const gridScrollbarWidth = 14;
 const uiPaddingWidth = 16;
 const uiWidthBuffer = 2;
 const uiChromeHeight = 52;
@@ -137,7 +136,7 @@ function postCursorOptions() {
     });
 }
 const visibleGridRows = Math.max(1, Math.min(Math.ceil(Object.keys(cursorSVGs).length / gridColumnCount), maxVisibleGridRows));
-const uiWidth = (gridColumnCount * gridCellSize) + gridScrollbarWidth + uiPaddingWidth + uiWidthBuffer;
+const uiWidth = (gridColumnCount * gridCellSize) + uiPaddingWidth + uiWidthBuffer;
 const uiHeight = (visibleGridRows * gridCellSize) + uiChromeHeight;
 // Show the UI
 figma.showUI(__html__, { width: uiWidth, height: uiHeight });

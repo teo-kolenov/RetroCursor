@@ -15,6 +15,8 @@ test('cursor type picker is a 4-cell-wide icon grid that creates cursors on clic
   assert.match(uiHtml, /--grid-cell-size:\s*64px/);
   assert.match(uiHtml, /--grid-column-count:\s*4/);
   assert.match(uiHtml, /grid-template-columns:\s*repeat\(var\(--grid-column-count\),\s*var\(--grid-cell-size\)\)/);
+  assert.match(uiHtml, /width:\s*calc\(var\(--grid-cell-size\)\s*\*\s*var\(--grid-column-count\)\)/);
+  assert.doesNotMatch(uiHtml, /scrollbar-gutter/);
   assert.match(uiHtml, /max-height:\s*calc\(var\(--grid-cell-size\)\s*\*\s*8\)/);
   assert.match(uiHtml, /overflow-y:\s*auto/);
   assert.match(uiHtml, /width:\s*40px/);
@@ -28,6 +30,7 @@ test('cursor type picker is a 4-cell-wide icon grid that creates cursors on clic
   assert.doesNotMatch(uiHtml, /type:\s*'update-selected'/);
 
   assert.match(codeTs, /const gridColumnCount = 4/);
+  assert.doesNotMatch(codeTs, /gridScrollbarWidth/);
   assert.match(codeTs, /const uiChromeHeight = 52/);
   assert.match(codeTs, /Math\.ceil\(Object\.keys\(cursorSVGs\)\.length \/ gridColumnCount\)/);
   assert.match(codeTs, /figma\.showUI\(__html__,\s*\{\s*width:\s*uiWidth,\s*height:\s*uiHeight\s*\}\)/);

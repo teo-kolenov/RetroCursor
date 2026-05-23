@@ -68,7 +68,7 @@
       grid-template-columns: repeat(var(--grid-column-count), var(--grid-cell-size));
       grid-auto-rows: var(--grid-cell-size);
       align-content: start;
-      width: calc((var(--grid-cell-size) * var(--grid-column-count)) + 14px);
+      width: calc(var(--grid-cell-size) * var(--grid-column-count));
       height: calc(var(--grid-cell-size) * var(--visible-row-count));
       max-height: calc(var(--grid-cell-size) * 8);
       overflow-y: auto;
@@ -77,7 +77,6 @@
       border-radius: 6px;
       background: #ffffff;
       box-sizing: border-box;
-      scrollbar-gutter: stable;
     }
 
     .cursor-cell {
