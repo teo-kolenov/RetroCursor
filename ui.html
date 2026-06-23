@@ -37,6 +37,12 @@
       gap: 8px;
     }
 
+    .size-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     label {
       font-size: 12px;
       font-weight: 600;
@@ -144,6 +150,21 @@
       cursor: pointer;
     }
 
+    button:disabled {
+      cursor: default;
+      opacity: 0.5;
+    }
+
+    .export-button {
+      height: 30px;
+      background: #222222;
+      color: #ffffff;
+    }
+
+    .export-button:not(:disabled):hover {
+      background: #000000;
+    }
+
   </style>
 </head>
 <body>
@@ -155,24 +176,29 @@
     </div>
 
     <div class="compact-row">
-      <label for="cursorSize">Size</label>
-      <select id="cursorSize">
-        <option value="24 px">24 px</option>
-        <option value="32 px">32 px</option>
-        <option value="48 px">48 px</option>
-        <option value="64 px" selected>64 px</option>
-        <option value="128 px">128 px</option>
-        <option value="256 px">256 px</option>
-      </select>
+      <div class="size-control">
+        <label for="cursorSize">Size</label>
+        <select id="cursorSize">
+          <option value="24 px">24 px</option>
+          <option value="32 px">32 px</option>
+          <option value="48 px">48 px</option>
+          <option value="64 px" selected>64 px</option>
+          <option value="128 px">128 px</option>
+          <option value="256 px">256 px</option>
+        </select>
+      </div>
+      <button id="exportCursors" class="export-button" type="button" title="Export all cursors as SVG ZIP" disabled>Export</button>
     </div>
   </div>
 
   <script>
     const cursorGrid = document.getElementById('cursorGrid');
     const cursorSizeSelect = document.getElementById('cursorSize');
+    const exportButton = document.getElementById('exportCursors');
 
     let cursorOptions = [];
     let selectedCursorType = 'MacOS 9 - pointer';
+    let crcTable;
 
     function postPluginMessage(message) {
       parent.postMessage({
@@ -185,6 +211,189 @@
         cursorType: selectedCursorType,
         cursorSize: cursorSizeSelect.value
       };
+    }
+
+    function updateExportButtonState() {
+      exportButton.disabled = cursorOptions.length === 0;
+    }
+
+    function sanitizeFileName(value) {
+      return String(value)
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'cursor';
+    }
+
+    function escapeXml(value) {
+      return String(value).replace(/[<>&"']/g, (character) => ({
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        '"': '&quot;',
+        "'": '&apos;'
+      })[character]);
+    }
+
+    function getCursorBase64(cursor) {
+      if (cursor.base64) {
+        return cursor.base64;
+      }
+
+      return cursor.src.replace(/^data:image\/png;base64,/, '');
+    }
+
+    function createCursorSvg(cursor) {
+      const width = Number(cursor.width) || 64;
+      const height = Number(cursor.height) || 64;
+      const label = escapeXml(cursor.label || cursor.cursorType);
+      const base64 = getCursorBase64(cursor);
+
+      return [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${label}">`,
+        `  <title>${label}</title>`,
+        `  <image href="data:image/png;base64,${base64}" width="${width}" height="${height}" image-rendering="pixelated"/>`,
+        '</svg>',
+        ''
+      ].join('\n');
+    }
+
+    function writeUint16(view, offset, value) {
+      view.setUint16(offset, value, true);
+    }
+
+    function writeUint32(view, offset, value) {
+      view.setUint32(offset, value >>> 0, true);
+    }
+
+    function getCrcTable() {
+      if (crcTable) {
+        return crcTable;
+      }
+
+      crcTable = new Uint32Array(256);
+      for (let index = 0; index < 256; index += 1) {
+        let value = index;
+        for (let bit = 0; bit < 8; bit += 1) {
+          value = (value & 1) ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
+        }
+        crcTable[index] = value >>> 0;
+      }
+      return crcTable;
+    }
+
+    function getCrc32(bytes) {
+      const table = getCrcTable();
+      let crc = 0xffffffff;
+      for (let index = 0; index < bytes.length; index += 1) {
+        crc = table[(crc ^ bytes[index]) & 0xff] ^ (crc >>> 8);
+      }
+      return (crc ^ 0xffffffff) >>> 0;
+    }
+
+    function getZipDateParts(date) {
+      const year = Math.max(1980, date.getFullYear());
+      return {
+        time: (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2),
+        date: ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate()
+      };
+    }
+
+    function createZipArchive(files) {
+      const encoder = new TextEncoder();
+      const localParts = [];
+      const centralParts = [];
+      const now = getZipDateParts(new Date());
+      let offset = 0;
+
+      files.forEach((file) => {
+        const nameBytes = encoder.encode(file.name);
+        const dataBytes = encoder.encode(file.content);
+        const crc = getCrc32(dataBytes);
+
+        const localHeader = new Uint8Array(30 + nameBytes.length);
+        const localView = new DataView(localHeader.buffer);
+        writeUint32(localView, 0, 0x04034b50);
+        writeUint16(localView, 4, 20);
+        writeUint16(localView, 6, 0);
+        writeUint16(localView, 8, 0);
+        writeUint16(localView, 10, now.time);
+        writeUint16(localView, 12, now.date);
+        writeUint32(localView, 14, crc);
+        writeUint32(localView, 18, dataBytes.length);
+        writeUint32(localView, 22, dataBytes.length);
+        writeUint16(localView, 26, nameBytes.length);
+        writeUint16(localView, 28, 0);
+        localHeader.set(nameBytes, 30);
+
+        const centralHeader = new Uint8Array(46 + nameBytes.length);
+        const centralView = new DataView(centralHeader.buffer);
+        writeUint32(centralView, 0, 0x02014b50);
+        writeUint16(centralView, 4, 20);
+        writeUint16(centralView, 6, 20);
+        writeUint16(centralView, 8, 0);
+        writeUint16(centralView, 10, 0);
+        writeUint16(centralView, 12, now.time);
+        writeUint16(centralView, 14, now.date);
+        writeUint32(centralView, 16, crc);
+        writeUint32(centralView, 20, dataBytes.length);
+        writeUint32(centralView, 24, dataBytes.length);
+        writeUint16(centralView, 28, nameBytes.length);
+        writeUint16(centralView, 30, 0);
+        writeUint16(centralView, 32, 0);
+        writeUint16(centralView, 34, 0);
+        writeUint16(centralView, 36, 0);
+        writeUint32(centralView, 38, 0);
+        writeUint32(centralView, 42, offset);
+        centralHeader.set(nameBytes, 46);
+
+        localParts.push(localHeader, dataBytes);
+        centralParts.push(centralHeader);
+        offset += localHeader.length + dataBytes.length;
+      });
+
+      const centralOffset = offset;
+      const centralSize = centralParts.reduce((size, part) => size + part.length, 0);
+      const endOfCentralDirectory = new Uint8Array(22);
+      const endView = new DataView(endOfCentralDirectory.buffer);
+      writeUint32(endView, 0, 0x06054b50);
+      writeUint16(endView, 4, 0);
+      writeUint16(endView, 6, 0);
+      writeUint16(endView, 8, files.length);
+      writeUint16(endView, 10, files.length);
+      writeUint32(endView, 12, centralSize);
+      writeUint32(endView, 16, centralOffset);
+      writeUint16(endView, 20, 0);
+
+      return new Blob(
+        localParts.concat(centralParts, endOfCentralDirectory),
+        { type: 'application/zip' }
+      );
+    }
+
+    function downloadBlob(blob, fileName) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function exportCursors() {
+      if (!cursorOptions.length) {
+        return;
+      }
+
+      const files = cursorOptions.map((cursor) => ({
+        name: `${sanitizeFileName(cursor.label || cursor.cursorType)}.svg`,
+        content: createCursorSvg(cursor)
+      }));
+
+      downloadBlob(createZipArchive(files), 'cursor-widget-cursors-svg.zip');
     }
 
     function updateSelectedCell() {
@@ -233,8 +442,11 @@
         cursorGrid.appendChild(createCursorCell(cursor));
       });
 
+      updateExportButtonState();
       updateSelectedCell();
     }
+
+    exportButton.addEventListener('click', exportCursors);
 
     window.addEventListener('message', (event) => {
       const msg = event.data.pluginMessage;

@@ -41,3 +41,18 @@ test('64 px is the default cursor size', () => {
   assert.match(uiHtml, /<option value="64 px" selected>64 px<\/option>/);
   assert.match(codeTs, /const defaultCursorSize = "64 px"/);
 });
+
+test('exports every cursor as SVG files in a ZIP archive', () => {
+  assert.match(uiHtml, /id="exportCursors"/);
+  assert.match(uiHtml, /class="export-button"/);
+  assert.match(uiHtml, /createCursorSvg/);
+  assert.match(uiHtml, /createZipArchive/);
+  assert.match(uiHtml, /downloadBlob/);
+  assert.match(uiHtml, /cursor-widget-cursors-svg\.zip/);
+  assert.match(uiHtml, /type:\s*'application\/zip'/);
+  assert.match(uiHtml, /\.svg/);
+
+  assert.match(codeTs, /base64/);
+  assert.match(codeTs, /width/);
+  assert.match(codeTs, /height/);
+});

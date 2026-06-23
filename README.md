@@ -13,6 +13,7 @@ A Figma plugin that allows users to insert cursor images on canvas with customiz
   - 64 px (default)
   - 128 px
   - 256 px
+- Export all cursor images as SVG files in a ZIP archive
 - Clean, minimal UI that appears when plugin is run
 
 ## Installation
@@ -30,6 +31,7 @@ A Figma plugin that allows users to insert cursor images on canvas with customiz
 3. Click a cursor image in the grid to add it to your canvas
 4. The cursor will be placed at the center of your viewport
 5. To add a different cursor, click another image in the grid
+6. Click Export to download every cursor as SVG files in a ZIP archive
 
 ## Development
 

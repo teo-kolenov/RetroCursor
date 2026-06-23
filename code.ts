@@ -172,11 +172,18 @@ function createCursorImage(cursorType: string, cursorSize: string): RectangleNod
 function postCursorOptions(): void {
   figma.ui.postMessage({
     type: 'cursor-options',
-    cursors: Object.entries(cursorSVGs).map(([cursorType, base64]) => ({
-      cursorType,
-      label: cursorType,
-      src: `data:image/png;base64,${base64}`
-    }))
+    cursors: Object.entries(cursorSVGs).map(([cursorType, base64]) => {
+      const { width, height } = getCursorAsset(cursorType);
+
+      return {
+        cursorType,
+        label: cursorType,
+        src: `data:image/png;base64,${base64}`,
+        base64,
+        width,
+        height
+      };
+    })
   });
 }
 

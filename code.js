@@ -128,11 +128,17 @@ function createCursorImage(cursorType, cursorSize) {
 function postCursorOptions() {
     figma.ui.postMessage({
         type: 'cursor-options',
-        cursors: Object.entries(cursorSVGs).map(([cursorType, base64]) => ({
-            cursorType,
-            label: cursorType,
-            src: `data:image/png;base64,${base64}`
-        }))
+        cursors: Object.entries(cursorSVGs).map(([cursorType, base64]) => {
+            const { width, height } = getCursorAsset(cursorType);
+            return {
+                cursorType,
+                label: cursorType,
+                src: `data:image/png;base64,${base64}`,
+                base64,
+                width,
+                height
+            };
+        })
     });
 }
 const visibleGridRows = Math.max(1, Math.min(Math.ceil(Object.keys(cursorSVGs).length / gridColumnCount), maxVisibleGridRows));
